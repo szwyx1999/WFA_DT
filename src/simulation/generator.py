@@ -275,7 +275,12 @@ def generate_synthetic_5min(cfg: SimConfig) -> Tuple[pd.DataFrame, pd.DataFrame,
         # Methane intensity (derived from simple energy-balance proxy)
         # DMI proxy ~ 0.025*BW + 0.10*daily_milk (very rough)
         # CH4_g_day ~ 20 * DMI (rough scaling), intensity = CH4 / milk (g/kg)
-        bw_daily = np.nanmean(body_weight[i]) if np.isfinite(np.nanmean(body_weight[i])) else weight_base[i]
+        # bw_daily = np.nanmean(body_weight[i]) if np.isfinite(np.nanmean(body_weight[i])) else weight_base[i]
+        bw_vals = body_weight[i]
+        if np.isfinite(bw_vals).any():
+            bw_daily = float(np.nanmean(bw_vals))
+        else:
+            bw_daily = float(weight_base[i])
         dmi = 0.025 * bw_daily + 0.10 * daily_milk
         ch4_g_day = 20.0 * dmi * (1.0 + 0.05 * heat_pressure.mean() + 0.10 * ev_ill.mean())
         intensity = ch4_g_day / max(1e-6, daily_milk)  # g/kg milk
