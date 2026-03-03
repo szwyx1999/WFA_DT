@@ -26,3 +26,7 @@ rolling mean/std (1h, 6h): rumination/activity/THI/methane
 milk: milk_last/hours_since_milk/hours_since_milk
 weight: weight_last/hours_since_weight/weight_change
 """
+
+# 3. Anomaly detection
+"""Since synthetic data has label, we can use --train_on_normal"""
+python scripts/score_anomaly.py --in_csv data/processed/features_5min.csv --out_csv data/processed/anomaly_scores.csv --contamination 0.03 --train_on_normal
