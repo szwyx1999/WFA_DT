@@ -1,0 +1,43 @@
+{
+  "config": {
+    "seed": 42,
+    "n_cows": 100,
+    "start": "2026-01-01 00:00:00",
+    "days": 3,
+    "freq_5min": "5min",
+    "milkings_per_day": 2,
+    "milking_times": [
+      "05:00",
+      "17:00"
+    ],
+    "weight_measure_prob_per_day": 0.14285714285714285,
+    "weight_irregular_jitter_hours": 6,
+    "p_miss_activity_5min": 0.005,
+    "p_miss_rumination": 0.01,
+    "p_miss_env": 0.005,
+    "dropout_prob_per_cow": 0.25,
+    "dropout_min_hours": 1,
+    "dropout_max_hours": 6,
+    "event_rate_per_cow_day": 0.15,
+    "event_min_hours": 6,
+    "event_max_hours": 24,
+    "p_heat_event": 0.6,
+    "temp_mean_c": 18.0,
+    "temp_daily_amp": 7.0,
+    "humidity_mean_pct": 60.0,
+    "humidity_daily_amp": 15.0,
+    "ammonia_mean_ppm": 8.0,
+    "generate_accel_1hz": false,
+    "accel_1hz_cows": null,
+    "accel_col": "activity_count",
+    "forced_events": null
+  },
+  "notes": {
+    "time_grid": "5-min aligned table; milk/weight are sparse by design; optional 1Hz accel stream available.",
+    "state_true": "0 normal, 1 stress, 2 severe (synthetic ground truth for evaluation only)."
+  },
+  "shape": {
+    "measurements_rows": 86400,
+    "n_events": 35
+  }
+}

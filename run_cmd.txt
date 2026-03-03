@@ -1,0 +1,20 @@
+# Create Data
+python scripts/generate_synthetic_data.py --out_dir data/synthetic --n_cows 100 --days 3 --seed 42
+
+# Check synthetic data
+python -c "import pandas as pd; df=pd.read_csv('data/synthetic/measurements_5min.csv'); ev=pd.read_csv('data/synthetic/events.csv'); print(df.shape, ev.shape); print(df['state_true'].value_counts().head()); print('milk non-null', df['milk_yield_kg_session'].notna().mean()); print('weight non-null', df['body_weight_kg'].notna().mean()); print('rum missing', df['rumination_min_5min'].isna().mean())"
+
+"""
+(86400, 13) (35, 5)
+state_true
+0    80410
+1     4778
+2     1212
+Name: count, dtype: int64
+milk non-null 0.006944444444444444
+weight non-null 0.0005324074074074074
+rum missing 0.019050925925925926
+
+86400: 100 cows × 3 days × (24h × 60/5)
+35: 0.15 cow-day-event-rate × 100 cows × 3 days ~ about 45
+"""
