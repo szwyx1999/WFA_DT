@@ -30,3 +30,10 @@ weight: weight_last/hours_since_weight/weight_change
 # 3. Anomaly detection
 """Since synthetic data has label, we can use --train_on_normal"""
 python scripts/score_anomaly.py --in_csv data/processed/features_5min.csv --out_csv data/processed/anomaly_scores.csv --contamination 0.03 --train_on_normal
+
+# 4. GaussianHMM - welfare check
+python scripts/fit_welfare_hmm.py --k 3 --n_iter 10 --anomaly_weight 0.0
+"""
+data/processed/welfare_states.csv: data/processed/welfare_states.csv
+data/processed/welfare_hmm_meta.json: parameters/feature_selected/loglik
+"""
