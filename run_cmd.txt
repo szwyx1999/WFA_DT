@@ -40,3 +40,6 @@ data/processed/welfare_hmm_meta.json: parameters/feature_selected/loglik
 
 # 5. Fusion Strategy
 python scripts/fuse_and_alert.py --risk_th 0.55 --run_k 6
+
+# 6. Evaluation (3 folds + HMM 6 iter)
+python scripts/evaluate_cv.py --splits 3 --hmm_iter 6

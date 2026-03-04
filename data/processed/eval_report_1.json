@@ -1,0 +1,60 @@
+{
+  "config": {
+    "n_splits": 3,
+    "random_state": 42,
+    "hmm_k": 3,
+    "hmm_n_iter": 6,
+    "anomaly_weight": 0.0,
+    "contamination": 0.03,
+    "welfare_risk_th": 0.55,
+    "welfare_run_k": 6,
+    "pause_on_anomaly": true
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "n_train_cows": 66,
+      "n_test_cows": 34,
+      "auroc_risk": 0.6110171305930653,
+      "auprc_risk": 0.10399924087920354,
+      "brier_risk": 0.512121630434955,
+      "false_alarms_per_cow_day": 0.4129575352736692,
+      "time_to_detect_min": 118.0,
+      "anomaly_alarm_rate": 0.03199891067538126,
+      "welfare_alarm_rate": 0.44815495642701525
+    },
+    {
+      "fold": 1,
+      "n_train_cows": 67,
+      "n_test_cows": 33,
+      "auroc_risk": 0.5474076103065717,
+      "auprc_risk": 0.04252812433236697,
+      "brier_risk": 0.5453358202228572,
+      "false_alarms_per_cow_day": 0.4610765827451807,
+      "time_to_detect_min": 90.83333333333333,
+      "anomaly_alarm_rate": 0.03377525252525253,
+      "welfare_alarm_rate": 0.4762205387205387
+    },
+    {
+      "fold": 2,
+      "n_train_cows": 67,
+      "n_test_cows": 33,
+      "auroc_risk": 0.5436031390551987,
+      "auprc_risk": 0.11555800480945885,
+      "brier_risk": 0.49885640977410045,
+      "false_alarms_per_cow_day": 0.39548439200814633,
+      "time_to_detect_min": 202.64705882352942,
+      "anomaly_alarm_rate": 0.022832491582491583,
+      "welfare_alarm_rate": 0.4489688552188552
+    }
+  ],
+  "summary": {
+    "auroc_mean": 0.5673426266516118,
+    "auroc_std": 0.03787103406661416,
+    "auprc_mean": 0.08736179000700979,
+    "auprc_std": 0.03925486516685641,
+    "brier_mean": 0.5187712868106376,
+    "false_alarms_per_cow_day_mean": 0.42317283667566546,
+    "ttd_min_mean": 137.16013071895426
+  }
+}
