@@ -1,0 +1,20 @@
+{
+  "cfg": {
+    "welfare_risk_threshold": 0.55,
+    "welfare_run_k": 6,
+    "use_is_anomaly_flag": true,
+    "anomaly_score_quantile": 0.97,
+    "pause_welfare_when_anomaly": true,
+    "min_gap_minutes_between_events": 60
+  },
+  "derived": {
+    "anomaly_threshold": null,
+    "welfare_risk_threshold": 0.55,
+    "welfare_run_k": 6
+  },
+  "summary": {
+    "anomaly_alarm_rate": 0.03201388888888889,
+    "welfare_alarm_rate": 0.46056712962962965,
+    "both_alarm_rate": 0.0
+  }
+}

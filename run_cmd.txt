@@ -37,3 +37,6 @@ python scripts/fit_welfare_hmm.py --k 3 --n_iter 10 --anomaly_weight 0.0
 data/processed/welfare_states.csv: data/processed/welfare_states.csv
 data/processed/welfare_hmm_meta.json: parameters/feature_selected/loglik
 """
+
+# 5. Fusion Strategy
+python scripts/fuse_and_alert.py --risk_th 0.55 --run_k 6
