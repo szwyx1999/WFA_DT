@@ -142,3 +142,92 @@ def save_outputs(out_df: pd.DataFrame, meta: dict, out_csv: str, meta_json: str)
     out_df.to_csv(out_csv, index=False)
     with open(meta_json, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)
+
+
+def fit_hmm_model(
+    train_df: pd.DataFrame,
+    cfg: WelfareHMMConfig,
+    feature_cols: Optional[List[str]] = None,
+) -> Tuple[GaussianHMM, SimpleImputer, List[str], dict]:
+    """
+    Fit HMM only on TRAIN cows. Return model + imputer for reuse on test cows.
+    """
+    df = train_df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    if feature_cols is None:
+        feature_cols = select_welfare_feature_cols(df)
+    assert len(feature_cols) > 0, "No usable feature columns for HMM."
+
+    # Fit imputer on train only
+    imputer = SimpleImputer(strategy="median")
+    X_all = imputer.fit_transform(df[feature_cols].to_numpy(dtype=float))
+
+    # Build sequences per cow (train only)
+    df = df.sort_values(["cow_id", "timestamp"]).reset_index(drop=True)
+    sequences, weights = [], []
+    for cow_id, idx in df.groupby("cow_id").indices.items():
+        idx = np.asarray(idx)
+        X = X_all[idx]
+        sequences.append(X)
+
+        if cfg.use_anomaly_weights and "is_anomaly" in df.columns:
+            w = np.where(df.loc[idx, "is_anomaly"].to_numpy(dtype=int) == 1, cfg.anomaly_weight, 1.0)
+        else:
+            w = np.ones(len(idx), dtype=float)
+        weights.append(w)
+
+    D = len(feature_cols)
+    hmm = GaussianHMM(K=cfg.k_states, D=D, var_floor=cfg.var_floor, eps=cfg.eps, random_state=cfg.random_state)
+    ll_hist = hmm.fit(sequences, weights=weights, n_iter=cfg.n_iter, tol=cfg.tol)
+
+    # reorder states so state0 ~ normal (higher rumination z)
+    order = None
+    rum_col = "rumination_min_5min_z"
+    if rum_col in feature_cols:
+        j = feature_cols.index(rum_col)
+        order = hmm.reorder_states_by_feature(j, descending=True)
+
+    meta = {
+        "feature_cols": feature_cols,
+        "loglik_history": ll_hist,
+        "state_order": order.tolist() if order is not None else None,
+        "pi": hmm.pi.tolist(),
+        "A": hmm.A.tolist(),
+    }
+    return hmm, imputer, feature_cols, meta
+
+
+def infer_hmm(
+    df_in: pd.DataFrame,
+    hmm: GaussianHMM,
+    imputer: SimpleImputer,
+    feature_cols: List[str],
+    k_states: int,
+) -> pd.DataFrame:
+    """
+    Run HMM inference on any df (train or test cows) using fitted model+imputer.
+    """
+    df = df_in.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.sort_values(["cow_id", "timestamp"]).reset_index(drop=True)
+
+    X_all = imputer.transform(df[feature_cols].to_numpy(dtype=float))
+
+    out = df[["cow_id", "timestamp"]].copy()
+    prob_cols = [f"p_state_{k}" for k in range(k_states)]
+    for c in prob_cols:
+        out[c] = np.nan
+    out["welfare_risk"] = np.nan
+    out["state_viterbi"] = np.nan
+
+    for cow_id, idx in df.groupby("cow_id").indices.items():
+        idx = np.asarray(idx)
+        X = X_all[idx]
+        gamma = hmm.predict_proba(X)
+        path = hmm.viterbi(X).astype(int)
+
+        out.loc[idx, prob_cols] = gamma
+        out.loc[idx, "welfare_risk"] = 1.0 - gamma[:, 0]  # state0 is normal after reorder
+        out.loc[idx, "state_viterbi"] = path
+
+    return out
