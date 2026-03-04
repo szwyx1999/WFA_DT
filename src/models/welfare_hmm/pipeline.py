@@ -98,12 +98,44 @@ def fit_welfare_hmm(
 
     ll_hist = hmm.fit(seqs, weights=ws, n_iter=cfg.n_iter, tol=cfg.tol)
 
-    # reorder states so state 0 ~ "normal" by rumination feature if available
+    # # reorder states so state 0 ~ "normal" by rumination feature if available
+    # order = None
+    # rum_col = "rumination_min_5min_z"
+    # if rum_col in feature_cols:
+    #     j = feature_cols.index(rum_col)
+    #     order = hmm.reorder_states_by_feature(j, descending=True)
+
+    # Reorder latent states so state 0 is the "most normal" one.
+    # Instead of using a single feature (rumination), we build a quick composite stress score:
+    #   stress ↑ when rumination ↓, milk ↓, inactivity ↑, THI ↑
     order = None
-    rum_col = "rumination_min_5min_z"
-    if rum_col in feature_cols:
-        j = feature_cols.index(rum_col)
-        order = hmm.reorder_states_by_feature(j, descending=True)
+    stress = np.zeros(cfg.k_states, dtype=float)
+    used = []
+
+    def add_term(col: str, coef: float) -> None:
+        if col in feature_cols:
+            used.append(col)
+            j = feature_cols.index(col)
+            stress[:] += coef * hmm.means[:, j]
+
+    # low rumination / low milk => higher stress (negative coef)
+    add_term("rumination_min_5min_z", -1.0)
+    add_term("milk_last_z", -1.0)
+
+    # high inactivity / high THI => higher stress (positive coef)
+    add_term("activity_inactive_frac_5min_z", +1.0)
+    add_term("thi_z", +1.0)
+
+    if used:
+        # smaller stress => more normal => put it at state 0
+        order = np.argsort(stress)
+        hmm.reorder_states(order)
+    else:
+        # fallback (should rarely happen): keep the old rumination-only ordering if available
+        rum_col = "rumination_min_5min_z"
+        if rum_col in feature_cols:
+            j = feature_cols.index(rum_col)
+            order = hmm.reorder_states_by_feature(j, descending=True)
 
     # inference
     out = df[["cow_id", "timestamp"]].copy()
@@ -180,12 +212,44 @@ def fit_hmm_model(
     hmm = GaussianHMM(K=cfg.k_states, D=D, var_floor=cfg.var_floor, eps=cfg.eps, random_state=cfg.random_state)
     ll_hist = hmm.fit(sequences, weights=weights, n_iter=cfg.n_iter, tol=cfg.tol)
 
-    # reorder states so state0 ~ normal (higher rumination z)
+    # # reorder states so state0 ~ normal (higher rumination z)
+    # order = None
+    # rum_col = "rumination_min_5min_z"
+    # if rum_col in feature_cols:
+    #     j = feature_cols.index(rum_col)
+    #     order = hmm.reorder_states_by_feature(j, descending=True)
+    
+    # Reorder latent states so state 0 is the "most normal" one.
+    # Instead of using a single feature (rumination), we build a quick composite stress score:
+    #   stress ↑ when rumination ↓, milk ↓, inactivity ↑, THI ↑
     order = None
-    rum_col = "rumination_min_5min_z"
-    if rum_col in feature_cols:
-        j = feature_cols.index(rum_col)
-        order = hmm.reorder_states_by_feature(j, descending=True)
+    stress = np.zeros(cfg.k_states, dtype=float)
+    used = []
+
+    def add_term(col: str, coef: float) -> None:
+        if col in feature_cols:
+            used.append(col)
+            j = feature_cols.index(col)
+            stress[:] += coef * hmm.means[:, j]
+
+    # low rumination / low milk => higher stress (negative coef)
+    add_term("rumination_min_5min_z", -1.0)
+    add_term("milk_last_z", -1.0)
+
+    # high inactivity / high THI => higher stress (positive coef)
+    add_term("activity_inactive_frac_5min_z", +1.0)
+    add_term("thi_z", +1.0)
+
+    if used:
+        # smaller stress => more normal => put it at state 0
+        order = np.argsort(stress)
+        hmm.reorder_states(order)
+    else:
+        # fallback (should rarely happen): keep the old rumination-only ordering if available
+        rum_col = "rumination_min_5min_z"
+        if rum_col in feature_cols:
+            j = feature_cols.index(rum_col)
+            order = hmm.reorder_states_by_feature(j, descending=True)
 
     meta = {
         "feature_cols": feature_cols,

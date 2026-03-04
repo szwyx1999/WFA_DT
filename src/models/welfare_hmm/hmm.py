@@ -249,3 +249,10 @@ class GaussianHMM:
         self.means = self.means[order]
         self.vars_ = self.vars_[order]
         return order
+    
+    def reorder_states(self, order: np.ndarray) -> None:
+        # reorder everything consistently
+        self.pi = self.pi[order]
+        self.A = self.A[order][:, order]
+        self.means = self.means[order]
+        self.vars_ = self.vars_[order]
