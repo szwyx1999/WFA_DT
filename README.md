@@ -1,0 +1,97 @@
+# Welfare Analytics Digital Twin Design
+
+## Repository structure
+
+`src/simulation/`: synthetic multi-stream data generator (100 cows, missingness, stress events)
+
+`src/features/`: alignment to 5-min grid, rolling stats, sparse handling, z-score, missing masks
+
+`src/models/anomaly/`: IsolationForest anomaly scoring
+
+`src/models/welfare_hmm/`: Gaussian HMM (EM training, inference, risk scoring)
+
+`src/fusion/`: alert logic (run-length persistence, event grouping)
+
+`src/evaluation/`: cross-cow CV protocol and metrics
+
+`tests/`: pytest unit tests per component
+
+`scripts/`: CLI entry points for each stage
+
+`data/`: Stores the generated raw data and the data processed through feature engineering
+
+## Reproducible environment
+
+Conda environment (Python 3.12) includes numpy/pandas/pytest/scikit-learn.
+
+```conda
+conda env create -f environment.yml
+```
+
+All commands below run within the Conda environment.
+
+## How to run
+
+### 1. Create Data
+
+```python
+python scripts/generate_synthetic_data.py --out_dir data/synthetic --n_cows 100 --days 3 --seed 42
+```
+
+#### Check synthetic data
+
+```python
+python -c "import pandas as pd; df=pd.read_csv('data/synthetic/measurements_5min.csv'); ev=pd.read_csv('data/synthetic/events.csv'); print(df.shape, ev.shape); print(df['state_true'].value_counts().head()); print('milk non-null', df['milk_yield_kg_session'].notna().mean()); print('weight non-null', df['body_weight_kg'].notna().mean()); print('rum missing', df['rumination_min_5min'].isna().mean())"
+```
+
+(86400, 13) (35, 5)  
+state_true  
+0    80410  
+1     4778  
+2     1212  
+Name: count, dtype: int64  
+milk non-null 0.006944444444444444  
+weight non-null 0.0005324074074074074  
+rum missing 0.019050925925925926  
+
+**86400**: 100 cows × 3 days × (24h × 60/5)  
+**35**: 0.15 cow-day-event-rate × 100 cows × 3 days ~ about 45  
+
+### 2. build features
+
+```python
+python scripts/build_features.py --in_csv data/synthetic/measurements_5min.csv --out_csv data/processed/features_5min.csv --baseline_hours 24
+```
+
+**rolling mean/std (1h, 6h)**: rumination/activity/THI/methane  
+**milk**: milk_last/hours_since_milk/hours_since_milk  
+**weight**: weight_last/hours_since_weight/weight_change  
+
+### 3. Anomaly detection
+
+Since synthetic data has label, we can use --train_on_normal"""  
+
+```python
+python scripts/score_anomaly.py --in_csv data/processed/features_5min.csv --out_csv data/processed/anomaly_scores.csv --contamination 0.03 --train_on_normal
+```
+
+### 4. GaussianHMM - welfare check
+
+```python
+python scripts/fit_welfare_hmm.py --k 3 --n_iter 10 --anomaly_weight 0.0
+```
+
+**data/processed/welfare_states.csv**: data/processed/welfare_states.csv  
+**data/processed/welfare_hmm_meta.json**: parameters/feature_selected/loglik  
+
+### 5. Fusion Strategy
+
+```python
+python scripts/fuse_and_alert.py --risk_th 0.55 --run_k 6
+```
+
+### 6. Evaluation (3 folds + HMM 6 iter)
+
+```python
+python scripts/evaluate_cv.py --splits 3 --hmm_iter 6
+```
