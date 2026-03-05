@@ -108,6 +108,10 @@ def evaluate_groupkfold(
         ev = welfare_event_intervals(test_df, label_col="label_welfare")
         ttd = time_to_detect_minutes(ev, fused_test, alarm_col="welfare_alarm")
 
+        pred_out = fused_test[["cow_id","timestamp","label_welfare","welfare_risk","welfare_alarm","anomaly_alarm"]].copy()
+        pred_out["fold"] = fold
+        pred_out.to_csv(f"data/temp/predictions_fold{fold}.csv", index=False)
+
         row = {
             "fold": fold,
             "n_train_cows": int(len(train_cows)),
