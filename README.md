@@ -32,6 +32,20 @@ All commands below run within the Conda environment.
 
 ## How to run
 
+### Prepare the Environment
+
+Activate the conda environment
+
+```conda
+conda activate welfare-demo
+```
+
+Add project root into PYTHONPATH
+
+```powershell
+$env:PYTHONPATH="."
+```
+
 ### 1. Create Data
 
 ```python
