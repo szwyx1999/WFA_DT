@@ -148,13 +148,19 @@ def fit_welfare_hmm(
     # need the same imputed X used earlier
     X_all = imputer.transform(df[feature_cols].to_numpy(dtype=float))
 
+    sev_weights = np.arange(cfg.k_states, dtype=float)
+    sev_weights = sev_weights / max(1.0, (cfg.k_states - 1))  # K=3 -> [0, 0.5, 1.0]
+
     for cow_id, idx in idx_map.items():
         X = X_all[idx]
         gamma = hmm.predict_proba(X)              # (T,K)
         path = hmm.viterbi(X).astype(int)
 
         out.loc[idx, prob_cols] = gamma
-        out.loc[idx, "welfare_risk"] = 1.0 - gamma[:, 0]  # state0=normal after ordering
+        # out.loc[idx, "welfare_risk"] = 1.0 - gamma[:, 0]  # state0=normal after ordering
+        # give more weight to more severe states (not just binary normal vs rest)
+        out.loc[idx, "welfare_risk"] = gamma @ sev_weights
+
         out.loc[idx, "state_viterbi"] = path
 
     meta = {
@@ -218,7 +224,7 @@ def fit_hmm_model(
     # if rum_col in feature_cols:
     #     j = feature_cols.index(rum_col)
     #     order = hmm.reorder_states_by_feature(j, descending=True)
-    
+
     # Reorder latent states so state 0 is the "most normal" one.
     # Instead of using a single feature (rumination), we build a quick composite stress score:
     #   stress ↑ when rumination ↓, milk ↓, inactivity ↑, THI ↑
@@ -284,6 +290,9 @@ def infer_hmm(
     out["welfare_risk"] = np.nan
     out["state_viterbi"] = np.nan
 
+    sev_weights = np.arange(k_states, dtype=float)
+    sev_weights = sev_weights / max(1.0, (k_states - 1))  # K=3 -> [0, 0.5, 1.0]
+
     for cow_id, idx in df.groupby("cow_id").indices.items():
         idx = np.asarray(idx)
         X = X_all[idx]
@@ -291,7 +300,10 @@ def infer_hmm(
         path = hmm.viterbi(X).astype(int)
 
         out.loc[idx, prob_cols] = gamma
-        out.loc[idx, "welfare_risk"] = 1.0 - gamma[:, 0]  # state0 is normal after reorder
+        #out.loc[idx, "welfare_risk"] = 1.0 - gamma[:, 0]  # state0 is normal after reorder
+        # give more weight to more severe states (not just binary normal vs rest)
+        out.loc[idx, "welfare_risk"] = gamma @ sev_weights
+        
         out.loc[idx, "state_viterbi"] = path
 
     return out

@@ -16,6 +16,11 @@ class EvalConfig:
     contamination: float = 0.03
 
     # fusion/alert
-    welfare_risk_th: float = 0.55
+    # welfare_risk_th: float = 0.55
+    # welfare_risk_th = 0.70
+    welfare_risk_th: float = 0.65
+    
     welfare_run_k: int = 6
+    # welfare_run_k: int = 12
+
     pause_on_anomaly: bool = True
